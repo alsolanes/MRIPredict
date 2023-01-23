@@ -1,0 +1,15 @@
+Package: mripredict
+Type: Package
+Title: MRIPredict
+Version: 1.0
+Date: 2021-01-23
+Authors@R: c(
+    person("Joaquim", "Radua", role = c("aut", "cre"),
+            email = "radua@recerca.clinic.cat"),
+    person("Aleix", "Solanes", role = "aut",
+            email = "solanes@recerca.clinic.cat"))
+Author: Joaquim Radua [aut, cre],
+        Aleix Solanes [aut]
+Maintainer: Joaquim Radua <radua@recerca.clinic.cat>
+Description: This package provides easy access to glmnet-based Lasso regression for sMRI images.
+License: GPL-3
