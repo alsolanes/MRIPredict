@@ -1249,7 +1249,7 @@ function (mri, covX, path)
     }
     paths
 }
-cite <-
+cite_mripredict <-
 function () 
 {
     cat("Please cite this software as:\n\n")
@@ -1259,7 +1259,7 @@ combat_apply <-
 function (tmp, dat, batch, mod = NULL, verbose = TRUE) 
 {
     if (!is.factor(batch) || nlevels(batch) != length(tmp$levels_batch) || 
-        levels(batch) != tmp$levels_batch) {
+        any(levels(batch) != tmp$levels_batch)) {
         stop("batch must be a factor with the same levels than when fitting combat")
     }
     if (is.data.frame(dat)) {

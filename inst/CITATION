@@ -1,0 +1,16 @@
+citHeader("To cite mripredict in publications use:")
+
+citEntry(
+  entry    = "Article",
+  title    = "Combining MRI and clinical data to detect high relapse risk after the first episode of psychosis",
+  author   = "Solanes A, Mezquida G, Janssen J, Amoretti S, Lobo A, Gonzalez-Pinto A, Arango C, Vieta E, Castro-Fornieles J, Berge D, Albacete A, Gine E, Parellada M, Bernardo M; PEPs group (collaborators); Pomarol-Clotet E, Radua J.",
+  journal  = "Schizophrenia (Heidelb)",
+  year     = 2022,
+  volume   = 8,
+  number   = 1,
+  pages    = 100,
+  url      = "10.1038/s41537-022-00309-w",
+  textVersion = paste(
+    "Solanes A, Mezquida G, Janssen J, Amoretti S, Lobo A, Gonzalez-Pinto A, Arango C, Vieta E, Castro-Fornieles J, Berge D, Albacete A, Gine E, Parellada M, Bernardo M; PEPs group (collaborators); Pomarol-Clotet E, Radua J. Combining MRI and clinical data to detect high relapse risk after the first episode of psychosis. Schizophrenia (Heidelb). 2022 Nov 17;8(1):100. doi: 10.1038/s41537-022-00309-w. PMID: 36396933; PMCID: PMC9672064."
+  )
+)
