@@ -3,9 +3,11 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 %%  ~~function to do ... ~~
+MRIPredict predict
 }
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Apply a previously created mripredict model to new data
 }
 \usage{
 mripredict_predict(mp, mri_data = NULL, mri_fu_paths_file = NULL, data_table_file = NULL, space, n_cores = 1)

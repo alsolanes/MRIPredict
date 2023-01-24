@@ -3,9 +3,11 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 %%  ~~function to do ... ~~
+cite: How to cite MRIPredict?
 }
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
+How this package should be cited
 }
 \usage{
 cite()

@@ -13,3 +13,6 @@ Author: Joaquim Radua [aut, cre],
 Maintainer: Joaquim Radua <radua@recerca.clinic.cat>
 Description: This package provides easy access to glmnet-based Lasso regression for sMRI images.
 License: GPL-3
+Depends: 
+    R (>= 2.10)
+LazyData: true

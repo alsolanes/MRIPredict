@@ -3,9 +3,11 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 %%  ~~function to do ... ~~
+MRIPredict
 }
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Create an object of type "mripredict". It contains the needed configuration for mripredict_cv, mripredict_fit and mripredict_predict.
 }
 \usage{
 mripredict(mri_data = NULL, data_table_file, response_var, covariates = NULL, predictor = NULL, response_family, modulation, information_variables = NULL, mask_files_path = NULL)

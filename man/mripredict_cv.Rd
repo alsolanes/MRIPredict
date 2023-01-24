@@ -3,9 +3,11 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 %%  ~~function to do ... ~~
+MRIPredict Crossvalidation
 }
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Function to perform a crossvalidation.
 }
 \usage{
 mripredict_cv(mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NULL, preloaded_covB_fu_path = NULL, folds_file = NULL, n_cores = 1, use_significant_voxels = FALSE, use_ensemble_voxels = FALSE, use_ensemble_subjects = FALSE, n_folds = 10, ide_shiny = FALSE, standardize_images = FALSE)
