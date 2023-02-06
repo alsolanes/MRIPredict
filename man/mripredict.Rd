@@ -16,12 +16,15 @@ mripredict(mri_data = NULL, data_table_file, response_var, covariates = NULL, pr
 \arguments{
   \item{mri_data}{
 %%     ~~Describe \code{mri_data} here~~
+A list of paths, sorted in the same order as the clinical_data dataframe.
 }
-  \item{data_table_file}{
-%%     ~~Describe \code{data_table_file} here~~
+  \item{clinical_data}{
+%%     ~~Describe \code{clinical_data} here~~
+A data.frame or csv file containing the relevant clinical information for each subject. Each row correspond to a subject, and they are in the same order as the list of paths of MRI images.
 }
   \item{response_var}{
 %%     ~~Describe \code{response_var} here~~
+A string with the name of the column that contains the response variable per each subject in the clinical_data table. 
 }
   \item{covariates}{
 %%     ~~Describe \code{covariates} here~~
@@ -56,8 +59,8 @@ mripredict(mri_data = NULL, data_table_file, response_var, covariates = NULL, pr
 %% ~put references to the literature/web site here ~
 }
 \author{
-person("Aleix", "Solanes", role = "aut",
-            email = "solanes@recerca.clinic.cat")
+Joaquim Radua and Aleix Solanes
+Maintainer: Aleix Solanes <email: solanes@recerca.clinic.cat>
 }
 \note{
 %%  ~~further notes~~

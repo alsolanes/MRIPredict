@@ -139,6 +139,12 @@ function (message)
 {
     stop(paste("\n", message, sep = ""))
 }
+.cite_mripredict <-
+function () 
+{
+    cat("Please cite this software as:\n\n")
+    cat("Solanes A, Mezquida G, Janssen J, Amoretti S, Lobo A, González-Pinto A, Arango C, Vieta E, Castro-Fornieles J, Bergé D, Albacete A, Giné E, Parellada M, Bernardo M; PEPs group (collaborators), Pomarol-Clotet E, Radua J. Combining MRI and clinical data to detect high relapse risk after the first episode of psychosis. Schizophrenia (Heidelb). 2022 Nov 17;8(1):100. doi: 10.1038/s41537-022-00309-w. PMID: 36396933; PMCID: PMC9672064.\n")
+}
 .combat_tmp1 <-
 function (dat, batch, levels_batch, mod) 
 {
@@ -1248,12 +1254,6 @@ function (mri, covX, path)
         paths = c(paths, paste(path, "_beta", i, sep = ""))
     }
     paths
-}
-cite_mripredict <-
-function () 
-{
-    cat("Please cite this software as:\n\n")
-    cat("Solanes A, Mezquida G, Janssen J, Amoretti S, Lobo A, González-Pinto A, Arango C, Vieta E, Castro-Fornieles J, Bergé D, Albacete A, Giné E, Parellada M, Bernardo M; PEPs group (collaborators), Pomarol-Clotet E, Radua J. Combining MRI and clinical data to detect high relapse risk after the first episode of psychosis. Schizophrenia (Heidelb). 2022 Nov 17;8(1):100. doi: 10.1038/s41537-022-00309-w. PMID: 36396933; PMCID: PMC9672064.\n")
 }
 combat_apply <-
 function (tmp, dat, batch, mod = NULL, verbose = TRUE) 
@@ -2373,6 +2373,11 @@ function (sdat, g.hat, d.hat, g.bar, t2, a, b, conv = 0.0001)
     rownames(adjust) <- c("g.star", "d.star")
     adjust
 }
+launchApp <-
+function () 
+{
+    shiny::runApp(system.file("shinyapp", package = "mripredict"))
+}
 load_preloaded_covB <-
 function (path) 
 {
@@ -2393,7 +2398,7 @@ function (mni, sto_ijk)
     as.matrix(coordinate[1:3, ])
 }
 mripredict <-
-function (mri_data = NULL, data_table_file, response_var, covariates = NULL, 
+function (mri_data = NULL, clinical_data, response_var, covariates = NULL, 
     predictor = NULL, response_family, modulation, information_variables = NULL, 
     mask_files_path = NULL) 
 {
@@ -2515,18 +2520,18 @@ function (mri_data = NULL, data_table_file, response_var, covariates = NULL,
     else if (mri_data_format == "mripredict_data") {
         mri_un = mri_data
     }
-    if (!is.null(data_table_file) && any(data_table_file != "")) {
-        if (length(data_table_file) == 1) {
-            data_table = .read_data_table(data_table_file)
+    if (!is.null(clinical_data) && any(clinical_data != "")) {
+        if (length(clinical_data) == 1) {
+            data_table = .read_data_table(clinical_data)
         }
         else {
-            data_table = data_table_file
+            data_table = clinical_data
         }
     }
     else {
         data_table = NULL
     }
-    if (!is.null(data_table_file)) 
+    if (!is.null(clinical_data)) 
         response = .check_response_var(data_table, response_var)
     else response = NULL
     response_levels = c()
@@ -3435,7 +3440,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     mp
 }
 mripredict_predict <-
-function (mp, mri_data = NULL, mri_fu_paths_file = NULL, data_table_file = NULL, 
+function (mp, mri_data = NULL, mri_fu_paths_file = NULL, clinical_data = NULL, 
     space, n_cores = 1) 
 {
     .require("glmnet")
@@ -3451,7 +3456,7 @@ function (mp, mri_data = NULL, mri_fu_paths_file = NULL, data_table_file = NULL,
         n_cores = 2
     }
     .print_action("Setting new MRIPredict model")
-    mp_test = mripredict(mri_data = mri_data, data_table_file = data_table_file, 
+    mp_test = mripredict(mri_data = mri_data, clinical_data = clinical_data, 
         response_var = mp$response_var, covariates = mp$covX_var, 
         predictor = mp$pred_var, response_family = mp$response_family, 
         modulation = mp$modulation)
@@ -3481,15 +3486,15 @@ function (mp, mri_data = NULL, mri_fu_paths_file = NULL, data_table_file = NULL,
         "mins.\n")
     .print_ok()
     .print_action("Creating response vector and covariate matrix")
-    n_subjects = nrow(data_table_file)
+    n_subjects = nrow(clinical_data)
     if (!is.null(mp$covX_transf)) 
-        covX = .create_covX(data_table_file, mp$covX_transf)
+        covX = .create_covX(clinical_data, mp$covX_transf)
     sites = NULL
     if (!is.null(mp$data_table_transf)) {
         data_informative_table = data.frame2glmnet.matrix(m = mp$data_table_transf, 
-            x = data_table_file)
-        if ("site" %in% colnames(data_table_file)) {
-            sites = factor(x = data_table_file[, "site"])
+            x = clinical_data)
+        if ("site" %in% colnames(clinical_data)) {
+            sites = factor(x = clinical_data[, "site"])
         }
     }
     else {
@@ -3525,11 +3530,11 @@ function (mp, mri_data = NULL, mri_fu_paths_file = NULL, data_table_file = NULL,
                 }
             }
             else {
-                if (is.null(data_table_file)) {
+                if (is.null(clinical_data)) {
                   covX_test = matrix(1, nrow = mri$n)
                 }
                 else {
-                  covX_test = matrix(1, nrow = nrow(data_table_file))
+                  covX_test = matrix(1, nrow = nrow(clinical_data))
                 }
             }
             if (!is.null(mp$pred_var)) {

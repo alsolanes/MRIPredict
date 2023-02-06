@@ -19,12 +19,13 @@ An MRIPredict object, as created by the function mripredict.
 }
   \item{mri_data}{
 %%     ~~Describe \code{mri_data} here~~
+A list of paths, sorted in the same order as the clinical_data dataframe.
 }
   \item{mri_fu_paths_file}{
 %%     ~~Describe \code{mri_fu_paths_file} here~~
 }
-  \item{data_table_file}{
-%%     ~~Describe \code{data_table_file} here~~
+  \item{clinical_data}{
+%%     ~~Describe \code{clinical_data} here~~
 }
   \item{space}{
 %%     ~~Describe \code{space} here~~
@@ -47,8 +48,8 @@ An MRIPredict object, as created by the function mripredict.
 %% ~put references to the literature/web site here ~
 }
 \author{
-person("Aleix", "Solanes", role = "aut",
-            email = "solanes@recerca.clinic.cat")
+Joaquim Radua and Aleix Solanes
+Maintainer: Aleix Solanes <email: solanes@recerca.clinic.cat>
 }
 \note{
 %%  ~~further notes~~

@@ -70,8 +70,8 @@ Images should be MNI aligned. This field can be "MNI" or "NO_CHECK" if images ar
 %% ~put references to the literature/web site here ~
 }
 \author{
-person("Aleix", "Solanes", role = "aut",
-            email = "solanes@recerca.clinic.cat")
+Joaquim Radua and Aleix Solanes
+Maintainer: Aleix Solanes <email: solanes@recerca.clinic.cat>
 }
 \note{
 %%  ~~further notes~~

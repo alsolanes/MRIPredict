@@ -47,9 +47,6 @@ An MRIPredict object, as created by the function mripredict.
   \item{use_ensemble_subjects}{
 %%     ~~Describe \code{use_ensemble_subjects} here~~
 }
-  \item{ide_shiny}{
-%%     ~~Describe \code{ide_shiny} here~~
-}
   \item{standardize_images}{
 %%     ~~Describe \code{standardize_images} here~~
 }
@@ -68,8 +65,8 @@ An MRIPredict object, as created by the function mripredict.
 %% ~put references to the literature/web site here ~
 }
 \author{
-person("Aleix", "Solanes", role = "aut",
-            email = "solanes@recerca.clinic.cat")
+Joaquim Radua and Aleix Solanes
+Maintainer: Aleix Solanes <email: solanes@recerca.clinic.cat>
 }
 \note{
 %%  ~~further notes~~
