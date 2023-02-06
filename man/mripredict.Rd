@@ -25,18 +25,23 @@ A data.frame or csv file containing the relevant clinical information for each s
   \item{response_var}{
 %%     ~~Describe \code{response_var} here~~
 A string with the name of the column that contains the response variable per each subject in the clinical_data table. 
+If the response_family is 'cox' the response_var should contain a list of two variables, one for 'time' and one for 'status'.
 }
   \item{covariates}{
 %%     ~~Describe \code{covariates} here~~
+A list of variables to be treated as confounding variables.
 }
   \item{predictor}{
 %%     ~~Describe \code{predictor} here~~
+A list of variables that are supposed to apport information to the prediction, treated as predictor variables.
 }
   \item{response_family}{
 %%     ~~Describe \code{response_family} here~~
+It can be 'binomial' for binary outcomes, 'gaussian' for continuous outcomes, or 'cox' for survival risk-estimation models.
 }
   \item{modulation}{
 %%     ~~Describe \code{modulation} here~~
+It can be 'un' for unmodulated data, 'fu' for fully modulated data, or 'clinical' if there is only clinical data and no MRI images.
 }
   \item{information_variables}{
 %%     ~~Describe \code{information_variables} here~~
@@ -74,11 +79,22 @@ Maintainer: Aleix Solanes <email: solanes@recerca.clinic.cat>
 \examples{
 \dontrun{
 
-# create an object of class mripredict
-  mp <- mripredict(mri_data = mri_train, data_table_file = clinical_train,
+# create an object of class mripredict to perform binary outcome prediction using clinical and unmodulated structural MRI images.
+mp <- mripredict(mri_data = mri_train, clinical_data = clinical_train,
                  response_var="female", covariates=c("cent_age"), predictor=c("score1"),
-                 response_family="binomial", modulation="fu")
-
+                 response_family="binomial", modulation="un")
+# 
+# perform a 10-fold cross-validation
+mp <- mripredict_cv(mp, space = "NO_CHECK", 
+                    save_name = "testing", 
+                    folds_file = NULL, 
+                    n_cores = 1, 
+                    n_folds = 10)
+# Train on training data, and apply it to new data                    
+# train a model
+mp <- mripredict_fit(mp, space = "MNI", save_name = "model_fit")
+# apply a model on new data
+predictions <- mripredict_predict(mp, mri_data = mri_test, clinical_data = clinical_test)
 
 }
 }
