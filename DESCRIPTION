@@ -1,19 +1,33 @@
 Package: mripredict
 Type: Package
 Title: MRIPredict
-Version: 1.01
+Version: 1.1.1
 Date: 2021-01-23
 Authors@R: c(
-    person("Joaquim", "Radua", role = c("aut", "cre"),
-            email = "radua@recerca.clinic.cat"),
-    person("Aleix", "Solanes", role = "aut",
-            email = "solanes@recerca.clinic.cat"))
-Author: Joaquim Radua [aut, cre],
-        Aleix Solanes [aut]
-Maintainer: Joaquim Radua <radua@recerca.clinic.cat>
-Description: This package provides easy access to glmnet-based Lasso regression for sMRI images. This package let perform three main kind of predictions based on outcome: binary outcome, continuous outcome and risk-estimation using COX proportional hazards regression.
+    person("Joaquim", "Radua", role = c("aut"),
+            email = "radua@recerca.clinic.cat",
+            comment = c(ORCID = "0000-0003-1240-5438")),
+    person("Aleix", "Solanes", role = c("aut", "cre"),
+            email = "solanes@recerca.clinic.cat",
+            comment = c(ORCID = "0000-0002-2491-200X")))
+Maintainer: Aleix Solanes <solanes@recerca.clinic.cat>
+Description: This package provides easy access to glmnet-based Lasso regression for sMRI images. This package let perform three main kind of predictions based on outcome: binary outcome, continuous outcome and risk-estimation using COX proportional hazards regression. For more information on the methods and algorithms used in this package, see the following publication:Solanes A, Mezquida G, Janssen J, Amoretti S, Lobo A, Gonzalez-Pinto A, Arango C, Vieta E, Castro-Fornieles J, Berge D, Albacete A, Giné E, Parellada M, Bernardo M; PEPs group (collaborators); Pomarol-Clotet E, Radua J. Combining MRI and clinical data to detect high relapse risk after the first episode of psychosis. Schizophrenia (Heidelb). 2022 Nov 17;8(1):100. doi: 10.1038/s41537-022-00309-w. PMID: 36396933; PMCID: PMC9672064.
 License: GPL-3
 Depends: 
     R (>= 2.10)
 LazyData: true
 LazyDataCompression: xz
+Encoding: UTF-8
+RoxygenNote: 7.2.2
+Imports:
+    glmnet,
+    oro.nifti,
+    survival,
+    doParallel,
+    logistf,
+    doSNOW,
+    snow,
+    pbapply,
+    foreach,
+    parallel,
+    shiny

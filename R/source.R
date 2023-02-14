@@ -14,7 +14,7 @@ function (mri_data, data_table, pred_transf)
 function (gamma.hat) 
 {
     m <- mean(gamma.hat)
-    s2 <- var(gamma.hat)
+    s2 <- stats::var(gamma.hat)
     (2 * s2 + m^2)/s2
 }
 .assign.folds_one_site <-
@@ -69,7 +69,7 @@ function (y, family, nfolds)
             2)) {
             fold_with_constant_training_sample = NA
             for (i in 1:nfolds) {
-                if (var(y[which(folds != i)]) == 0) {
+                if (stats::var(y[which(folds != i)]) == 0) {
                   fold_with_constant_training_sample = i
                 }
             }
@@ -104,11 +104,11 @@ function (y, nfolds)
 function (gamma.hat) 
 {
     m <- mean(gamma.hat)
-    s2 <- var(gamma.hat)
+    s2 <- stats::var(gamma.hat)
     (m * s2 + m^3)/s2
 }
 .calculate_ensemble_accuracy <-
-function (cv_results, family) 
+function (mp, cv_results, family) 
 {
     acc_per_fold = c()
     for (i in 1:18) {
@@ -139,16 +139,10 @@ function (message)
 {
     stop(paste("\n", message, sep = ""))
 }
-.cite_mripredict <-
-function () 
-{
-    cat("Please cite this software as:\n\n")
-    cat("Solanes A, Mezquida G, Janssen J, Amoretti S, Lobo A, González-Pinto A, Arango C, Vieta E, Castro-Fornieles J, Bergé D, Albacete A, Giné E, Parellada M, Bernardo M; PEPs group (collaborators), Pomarol-Clotet E, Radua J. Combining MRI and clinical data to detect high relapse risk after the first episode of psychosis. Schizophrenia (Heidelb). 2022 Nov 17;8(1):100. doi: 10.1038/s41537-022-00309-w. PMID: 36396933; PMCID: PMC9672064.\n")
-}
 .combat_tmp1 <-
 function (dat, batch, levels_batch, mod) 
 {
-    batchmod <- model.matrix(~-1 + batch)
+    batchmod <- stats::model.matrix(~-1 + batch)
     n.batch <- nlevels(batch)
     batches <- list()
     for (i in 1:n.batch) {
@@ -227,13 +221,13 @@ function (tmp1, tmp2, tmp3, eb = TRUE, verbose = TRUE)
     delta.hat <- NULL
     for (i in tmp1$batches) {
         delta.hat <- rbind(delta.hat, apply(tmp3$s.data[, i], 
-            1, var, na.rm = T))
+            1, stats::var, na.rm = T))
     }
     gamma.star <- delta.star <- NULL
     gamma.bar <- t2 <- a.prior <- b.prior <- NULL
     if (eb) {
         gamma.bar <- apply(gamma.hat, 1, mean)
-        t2 <- apply(gamma.hat, 1, var)
+        t2 <- apply(gamma.hat, 1, stats::var)
         a.prior <- apply(delta.hat, 1, .aprior)
         b.prior <- apply(delta.hat, 1, .bprior)
         if (verbose) {
@@ -304,15 +298,15 @@ function (i, n)
 .coxph_RD2 <-
 function (predictor, stime, sevent) 
 {
-    surv_obj <- Surv(stime, sevent, type = "right")
-    coxphfit <- summary(coxph(surv_obj ~ predictor))
+    surv_obj <- survival::Surv(stime, sevent, type = "right")
+    coxphfit <- summary(survival::coxph(surv_obj ~ predictor))
     b <- coxphfit$coefficients[1]
     PI = sort.int((predictor - mean(predictor)) * b, index.return = TRUE)
     rankits = .normOrder(length(PI$x))
     kappa = sqrt(8/pi)
     rankits = rankits/kappa
-    surv_obj <- Surv(stime[PI$ix], sevent[PI$ix], type = "right")
-    coxphfit <- summary(coxph(surv_obj ~ rankits))
+    surv_obj <- survival::Surv(stime[PI$ix], sevent[PI$ix], type = "right")
+    coxphfit <- summary(survival::coxph(surv_obj ~ rankits))
     b <- coxphfit$coefficients[1]
     D = exp(b)
     sigma2 = pi^2/6
@@ -364,7 +358,7 @@ function (x, transf)
         tmp[1]
     })
     unique_dummy_colnames <- unique(dummy_colnames)
-    xp <- setNames(data.frame(matrix(data = NA, ncol = length(unique_dummy_colnames), 
+    xp <- stats::setNames(data.frame(matrix(data = NA, ncol = length(unique_dummy_colnames), 
         nrow = nrow(x))), unique_dummy_colnames)
     dummy_values <- sapply(strsplit(colnames(x), ":"), function(tmp) {
         tmp[2]
@@ -612,7 +606,7 @@ function (real, predictions, folder = "", save = FALSE)
             3), specificity = round(acc_class2, 3), bac = round(bac, 
             3))
     if (save) 
-        write.csv(metric, sprintf("%s/binary_results_fold%d.csv", 
+        utils::write.csv(metric, sprintf("%s/binary_results_fold%d.csv", 
             folder))
     metric
 }
@@ -646,9 +640,9 @@ function (results, frontier_time, iteration = 1, folder = "",
     results$iteration = iteration
     if (save) {
         if (!is.null(results$fold)) 
-            write.csv(results, sprintf("%s_cox_results_fold%d.csv", 
+            utils::write.csv(results, sprintf("%s_cox_results_fold%d.csv", 
                 folder, results$fold[1]), row.names = FALSE)
-        else write.csv(results, sprintf("%s_cox_results.csv", 
+        else utils::write.csv(results, sprintf("%s_cox_results.csv", 
             folder), row.names = FALSE)
     }
     perf
@@ -717,16 +711,17 @@ function (model_list, mp = NULL, file = NULL)
     }
     out$name = paste0(out$mni_or_variable, ":", out$modality)
     betes = out
-    resum_betes = do.call(data.frame, aggregate(betes$betas ~ 
+    resum_betes = do.call(data.frame, stats::aggregate(betes$betas ~ 
         betes$name, data = betes, FUN = function(x) c(sum = sum(x), 
         n = length(x))))
     colnames(resum_betes) = c("variable", "beta_sum", "beta_count")
     if (!is.null(file)) {
-        write.csv(resum_betes, file = gsub(".csv", "_summary.csv", 
+        utils::write.csv(resum_betes, file = gsub(".csv", "_summary.csv", 
             file))
-        write.csv(out, file = file, row.names = F)
+        utils::write.csv(out, file = file, row.names = F)
     }
     rownames(out) <- NULL
+    print(resum_betes)
     resum_betes
 }
 .most_frequent_variables_ijk <-
@@ -770,7 +765,7 @@ function (model_list, mp = NULL, file = NULL)
         out <- rbind(out, tmp)
     }
     if (!is.null(file)) 
-        write.csv(out, file = file)
+        utils::write.csv(out, file = file)
     out
 }
 .normOrder <-
@@ -816,7 +811,7 @@ function (N)
         }
     }
     for (i in 1:n2) {
-        s[i] = -qnorm(s[i], 0, 1)
+        s[i] = -stats::qnorm(s[i], 0, 1)
     }
     if (n%%2 == 0) {
         out = c(-s, s[length(s):1])
@@ -840,7 +835,7 @@ function (sum2, n, a, b)
 function (message) 
 {
     cat(message, "... ", sep = "")
-    flush.console()
+    utils::flush.console()
 }
 .print_metrics <-
 function (linPred, family, frontier_time = 0, testY, id) 
@@ -874,27 +869,27 @@ function (linPred, family, frontier_time = 0, testY, id)
 function (prefix = "") 
 {
     cat(prefix, "Ok\n", sep = "")
-    flush.console()
+    utils::flush.console()
 }
 .read_1col_file <-
 function (mri_paths_file) 
 {
-    read.table(mri_paths_file, as.is = TRUE)$V1
+    utils::read.table(mri_paths_file, as.is = TRUE)$V1
 }
 .read_2col_file <-
 function (mri_paths_file) 
 {
-    read.table(mri_paths_file, as.is = TRUE)$V2
+    utils::read.table(mri_paths_file, as.is = TRUE)$V2
 }
 .read_3col_file <-
 function (mri_paths_file) 
 {
-    read.table(mri_paths_file, as.is = TRUE)$V3
+    utils::read.table(mri_paths_file, as.is = TRUE)$V3
 }
 .read_4col_file <-
 function (mri_paths_file) 
 {
-    read.table(mri_paths_file, as.is = TRUE)$V4
+    utils::read.table(mri_paths_file, as.is = TRUE)$V4
 }
 .read_covars_file <-
 function (path_file, split_txt = ",") 
@@ -914,7 +909,7 @@ function (path_file, split_txt = ",")
 function (data_table_file) 
 {
     text = gsub(",", "\t", readLines(data_table_file))
-    text = read.csv(textConnection(text), sep = "\t", check.names = FALSE)
+    text = utils::read.csv(textConnection(text), sep = "\t", check.names = FALSE)
     as.matrix(text)
 }
 .read_folds_file <-
@@ -933,7 +928,7 @@ function (folds_file_path)
 .read_mri <-
 function (mri_paths, read_data = TRUE) 
 {
-    mri_tmp <- readNIfTI(mri_paths, read_data = read_data)
+    mri_tmp <- oro.nifti::readNIfTI(mri_paths, read_data = read_data)
     dim <- mri_tmp@dim_[2:(2 + mri_tmp@dim_[1] - 1)]
     sform_code = ""
     if (mri_tmp@sform_code == 4) {
@@ -958,7 +953,7 @@ function (mri_paths, read_data = TRUE)
 function (package) 
 {
     if (!require(package, character.only = TRUE, quietly = TRUE)) {
-        install.packages(package, repos = "http://cran.uk.r-project.org")
+        utils::install.packages(package, repos = "http://cran.uk.r-project.org")
         library(package, character.only = TRUE, quietly = TRUE)
     }
 }
@@ -1188,7 +1183,7 @@ aprior <-
 function (gamma.hat) 
 {
     m = mean(gamma.hat)
-    s2 = var(gamma.hat)
+    s2 = stats::var(gamma.hat)
     (2 * s2 + m^2)/s2
 }
 assign.folds <-
@@ -1205,7 +1200,7 @@ function (y, family = c("binomial", "cox", "gaussian"), site = NULL,
         }
         length(y)
     }, cox = {
-        if (class(y) != "Surv") {
+        if (!inherits(y, "Surv") ){
             stop("for \"cox\", y must be a \"Surv\" object")
         }
         nrow(y)
@@ -1237,7 +1232,7 @@ bprior <-
 function (gamma.hat) 
 {
     m = mean(gamma.hat)
-    s2 = var(gamma.hat)
+    s2 = stats::var(gamma.hat)
     (m * s2 + m^3)/s2
 }
 calculate_effects_controls <-
@@ -1249,8 +1244,8 @@ function (mri, covX, path)
     })
     paths = c()
     for (i in 1:ncol(covX)) {
-        mri_example[] = nifti(beta[i, , , ])
-        writeNIfTI(mri_example, paste(path, "_beta", i, sep = ""))
+        mri_example[] = oro.nifti::nifti(beta[i, , , ])
+        oro.nifti::writeNIfTI(mri_example, paste(path, "_beta", i, sep = ""))
         paths = c(paths, paste(path, "_beta", i, sep = ""))
     }
     paths
@@ -1355,7 +1350,7 @@ function (dat, batch, mod = NULL, eb = TRUE, verbose = TRUE)
                     else {
                       mod_i_is_na <- mod[i[is_na], ]
                     }
-                    beta <- matrix(coef(lm(dat_ji ~ mod[i, ])))
+                    beta <- matrix(stats::coef(stats::lm(dat_ji ~ mod[i, ])))
                     beta[which(is.na(beta))] <- 0
                     dat[j, i[is_na]] <- cbind(1, mod_i_is_na) %*% 
                       beta
@@ -1373,7 +1368,7 @@ function (dat, batch, mod = NULL, eb = TRUE, verbose = TRUE)
                   dat_j <- dat[j, ]
                   if (is.na(dat_j[i[1]])) {
                     if (!is.null(mod)) {
-                      beta <- matrix(coef(lm(dat_j ~ mod)))
+                      beta <- matrix(stats::coef(stats::lm(dat_j ~ mod)))
                       beta[which(is.na(beta))] <- 0
                       dat[j, i] <- cbind(1, mod[i, ]) %*% beta
                     }
@@ -1386,7 +1381,7 @@ function (dat, batch, mod = NULL, eb = TRUE, verbose = TRUE)
         }
     }
     not_constant <- which(apply(dat, 1, function(x) {
-        var(x) > 0
+        stats::var(x) > 0
     }))
     dat <- dat[not_constant, ]
     if (eb) {
@@ -1502,7 +1497,7 @@ function (m, x)
     if (!is.data.frame(x)) {
         stop("x must be a data.frame")
     }
-    if (class(m) != "data.frame2glmnet.matrix_fit") {
+    if (!inherits(m, "data.frame2glmnet.matrix_fit")) {
         stop("m must be a \"data.frame2glmnet.matrix\" object")
     }
     xp = NULL
@@ -1560,7 +1555,7 @@ function (x)
 }
 fit_model <-
 function (mp, data_informative_table, Y, mri, mri_fu, preloaded_covB = NULL, 
-    preloaded_covB_fu = NULL, SIGNIFICANCE_THRESHOLD = qnorm(0.97499999999999998), 
+    preloaded_covB_fu = NULL, SIGNIFICANCE_THRESHOLD = stats::qnorm(0.97499999999999998), 
     iter = -1, internal_folds = c(), n_cores = 1, use_significant_voxels = FALSE, 
     covX_site = c(), mri_wm = NULL, mri_fu_wm = NULL, name_combat = "_combat", 
     mask = NULL, standardize_images = FALSE) 
@@ -1594,24 +1589,24 @@ function (mp, data_informative_table, Y, mri, mri_fu, preloaded_covB = NULL,
     scale_mri$mean_mri_wm = NA
     scale_mri$mean_mri_wm_fu = NA
     if (standardize_images) {
-        scale_mri$sd_mri = sd(mri)
+        scale_mri$sd_mri = stats::sd(mri)
         scale_mri$mean_mri = mean(mri)
         mri = mri - scale_mri$mean_mri
         if (!is.null(mri_fu)) {
-            scale_mri$sd_mri_fu = sd(mri_fu)
+            scale_mri$sd_mri_fu = stats::sd(mri_fu)
             scale_mri$mean_mri_fu = mean(mri_fu)
             mri_fu = (mri_fu - scale_mri$mean_mri_fu)/scale_mri$sd_mri_fu * 
                 scale_mri$sd_mri
         }
         if (!is.null(mri_wm)) {
-            scale_mri$sd_mri_wm = sd(mri_wm)
+            scale_mri$sd_mri_wm = stats::sd(mri_wm)
             scale_mri$mean_mri_wm = mean(mri_wm)
             mri_wm = (mri_wm - scale_mri$mean_mri_wm)/scale_mri$sd_mri_wm * 
                 scale_mri$sd_mri
         }
         if (!is.null(mri_fu_wm)) {
-            scale_mri$sd_mri_wm_fu = sd(mri_wm_fu)
-            scale_mri$mean_mri_wm_fu = mean(mri_wm_fu)
+            scale_mri$sd_mri_wm_fu = stats::sd(mri_fu_wm)
+            scale_mri$mean_mri_wm_fu = mean(mri_fu_wm)
             mri_fu_wm = (mri_fu_wm - scale_mri$mean_mri_wm_fu)/scale_mri$sd_mri_wm_fu * 
                 scale_mri$sd_mri
         }
@@ -1625,10 +1620,11 @@ function (mp, data_informative_table, Y, mri, mri_fu, preloaded_covB = NULL,
         }
         else {
             mask = c()
+
             mask = array(TRUE, dim = dim(mri[, , , 1]))
             mask_o = mask
         }
-        mask = mask & (apply(mri, 1:3, var) > 0)
+        mask = mask & (apply(mri, 1:3, stats::var) > 0)
         mask_ijk = which(mask, arr.ind = TRUE)
         if (iter != -1) {
             .print_action("Training sample: cutting brain")
@@ -1775,8 +1771,8 @@ function (mp, data_informative_table, Y, mri, mri_fu, preloaded_covB = NULL,
                   mp$modulation == "op"))
         }
         else {
-            list_masked = remove_effects_precalculated(mask = mask, 
-                preloaded_covB = preloaded_covB, mri = mri, covX = covX_training, 
+            list_masked = remove_effects_precalculated(mask_3d = mask, 
+                preloaded_covB = preloaded_covB, mri = mri, covX_training = covX_training, 
                 trainY = Y, response_family = mp$response_family, 
                 n_cores = n_cores, SIGNIFICANCE = (use_significant_voxels || 
                   mp$modulation == "op"), covX_site = covX_site)
@@ -1790,9 +1786,9 @@ function (mp, data_informative_table, Y, mri, mri_fu, preloaded_covB = NULL,
                 list_fu_masked = remove_effects(mask_3d = mask, 
                   mri = mri_fu, covX_training = covX_training, 
                   trainY = Y, n_cores = n_cores, response_family = mp$response_family)
-            else list_fu_masked = remove_effects_precalculated(mask = mask, 
+            else list_fu_masked = remove_effects_precalculated(mask_3d = mask, 
                 preloaded_covB = preloaded_covB_fu, mri = mri_fu, 
-                covX = covX_training, trainY = Y, response_family = mp$response_family, 
+                covX_training = covX_training, trainY = Y, response_family = mp$response_family, 
                 n_cores = n_cores, SIGNIFICANCE = (use_significant_voxels || 
                   mp$modulation == "op"))
             .print_ok()
@@ -1873,8 +1869,8 @@ function (mp, data_informative_table, Y, mri, mri_fu, preloaded_covB = NULL,
             SD = apply(masked_X, 2, function(x) {
                 sqrt(sum(x^2)/DF)
             })
-            HIST = hist(SD, plot = FALSE, breaks = 100)
-            LOWESS = lowess(HIST$mids, HIST$density)
+            HIST = graphics::hist(SD, plot = FALSE, breaks = 100)
+            LOWESS = stats::lowess(HIST$mids, HIST$density)
             scale_clinical$MODE_SD = LOWESS$x[which(LOWESS$y == 
                 max(LOWESS$y[-1:-10]))]
             scale_clinical$MEANS = apply(predX_train, 2, mean)
@@ -1883,7 +1879,7 @@ function (mp, data_informative_table, Y, mri, mri_fu, preloaded_covB = NULL,
             }))
             if (length(scale_clinical$MEANS) > 1) 
                 predX_train = t(predX_train)
-            scale_clinical$SDS = apply(predX_train, 2, sd)
+            scale_clinical$SDS = apply(predX_train, 2, stats::sd)
             predX_train = as.matrix(apply(predX_train, 1, function(x) {
                 x/scale_clinical$SDS * scale_clinical$MODE_SD
             }))
@@ -2064,7 +2060,7 @@ function (x, y, family = "binomial", foldid = NULL, nfolds = 10,
         n = length(y)
     }
     if (family == "cox") {
-        if (class(y) != "Surv") {
+        if (!inherits(y, "Surv")) {
             stop("for \"cox\", y must be a Surv object")
         }
         n = nrow(y)
@@ -2095,9 +2091,9 @@ function (x, y, family = "binomial", foldid = NULL, nfolds = 10,
         stop("min.beta must be a positive number")
     }
     if (ncol(x) == 1) {
-        coef = switch(family, binomial = coef(glm(y ~ x, family = binomial)), 
-            cox = coef(coxph(Surv(time = y[, 1], event = y[, 
-                2]) ~ x)), gaussian = coef(lm(y ~ x)))
+        coef = switch(family, binomial = stats::coef(stats::glm(y ~ x, family = stats::binomial)), 
+            cox = stats::coef(survival::coxph(survival::Surv(time = y[, 1], event = y[, 
+                2]) ~ x)), gaussian = stats::coef(stats::lm(y ~ x)))
         if (family == "cox") {
             a0 = NULL
             betas = coef
@@ -2120,14 +2116,14 @@ function (x, y, family = "binomial", foldid = NULL, nfolds = 10,
         if (family == "binomial" && min(table(y)) < 3) {
             stop("too few subjects of one group")
         }
-        cv = cv.glmnet(x, y, type.measure = type_measure, family = family, 
+        cv = glmnet::cv.glmnet(x, y, type.measure = type_measure, family = family, 
             foldid = foldid, nfolds = nfolds, standardize = standardize)
         idx_lambda = match(cv$lambda.min, cv$lambda)
         if (cv$glmnet.fit$df[idx_lambda] == 0) {
             idx_lambda = which(cv$glmnet.fit$df > 0)[1]
         }
-        glmnet.control(fdev = 0)
-        lasso = glmnet(x, y, family, lambda = cv$lambda, standardize = standardize)
+        glmnet::glmnet.control(fdev = 0)
+        lasso = glmnet::glmnet(x, y, family, lambda = cv$lambda, standardize = standardize)
         a0 = lasso$a0[idx_lambda]
         betas = lasso$beta[, idx_lambda]
         betas[which(abs(betas) < min.beta)] = 0
@@ -2140,7 +2136,7 @@ function (x, y, family = "binomial", foldid = NULL, nfolds = 10,
 glmnet_predict <-
 function (m, x) 
 {
-    if (class(m) != "glmnet_fit") {
+    if (!inherits(m, "glmnet_fit")) {
         stop("m must be a \"glmnet_fit\" object")
     }
     if (!is.matrix(x)) {
@@ -2158,7 +2154,7 @@ function (m, x)
 glmnet_select <-
 function (x) 
 {
-    if (!(is.list(x) && length(x) > 0 && class(x[[1]]) == "glmnet_fit")) {
+    if (!(is.list(x) && length(x) > 0 && inherits(x[[1]], "glmnet_fit"))) {
         stop("x must be a list of objects of class \"glmnet_fit\" objects")
     }
     if (length(x) == 1) {
@@ -2211,7 +2207,7 @@ function (ijk, sto_ijk)
 impute.glmnet.matrix <-
 function (m, x, nimp = 20) 
 {
-    if (class(m) != "impute.glmnet.matrix_fit") {
+    if (!inherits(m, "impute.glmnet.matrix_fit")) {
         stop("m must be a \"impute.glmnet.matrix_fit\" object")
     }
     if (!is.matrix(x)) {
@@ -2247,10 +2243,10 @@ function (m, x, nimp = 20)
                     x.x.complete)
                   for (imp in 1:nimp) {
                     if (family == "binomial") {
-                      Ximp = as.numeric(x.y.to_predict > runif(length(rows.to_predict.complete)))
+                      Ximp = as.numeric(x.y.to_predict > stats::runif(length(rows.to_predict.complete)))
                     }
                     else {
-                      Ximp = x.y.to_predict + rnorm(length(rows.to_predict.complete), 
+                      Ximp = x.y.to_predict + stats::rnorm(length(rows.to_predict.complete), 
                         0, mj$errors[i])
                     }
                     x.imp[[imp]][rows.to_predict.complete, j] = Ximp
@@ -2277,19 +2273,20 @@ function (x, n_cores = 1)
         stop("x must be a matrix")
     }
     cat("[impute.glmnet.matrix_fit] Estimating imputation models...\n")
-    library(doSNOW)
-    cl <- makeCluster(n_cores)
-    registerDoSNOW(cl)
+    cl <- snow::makeCluster(n_cores)
+    doSNOW::registerDoSNOW(cl)
     iterations = ncol(x)
-    pb <- txtProgressBar(max = iterations, style = 3)
-    progress <- function(n) setTxtProgressBar(pb, n)
+    pb <- utils::txtProgressBar(max = iterations, style = 3)
+    progress <- function(n) utils::setTxtProgressBar(pb, n)
     opts <- list(progress = progress)
     start.time <- Sys.time()
     X_na = is.na(x)
     m = list()
-    m = foreach(j = 1:ncol(x), .export = c("assign.folds", ".assign.folds_one_site", 
+    j=0
+    '%dopar%' <- foreach::"%dopar%"
+    m = foreach::foreach(j = 1:ncol(x), .export = c("assign.folds", ".assign.folds_one_site", 
         "cv.glmnet", "glmnet.control", "glmnet", "glmnet_predict", 
-        "glmnet_fit", ".assign.folds_simple"), .options.snow = opts) %dopar% 
+        "glmnet_fit", ".assign.folds_simple"), .options.snow = opts) %dopar%
         {
             X_na_j = X_na[, j]
             x.x = matrix(x[which(!X_na_j), -j], ncol = ncol(x) - 
@@ -2340,12 +2337,12 @@ function (x, n_cores = 1)
                 imp.models[[k]] = imp.model
                 errors = c(errors, error)
             }
-            setTxtProgressBar(pb, j)
+            utils::setTxtProgressBar(pb, j)
             list(family = family, data = x.y, imp.models = imp.models[order(errors)], 
                 errors = errors[order(errors)])
         }
     close(pb)
-    stopCluster(cl)
+    snow::stopCluster(cl)
     cat("[impute.glmnet.matrix_fit] Running time:", difftime(Sys.time(), 
         start.time, units = "mins"), "minutes\n")
     class(m) = "impute.glmnet.matrix_fit"
@@ -2373,6 +2370,7 @@ function (sdat, g.hat, d.hat, g.bar, t2, a, b, conv = 0.0001)
     rownames(adjust) <- c("g.star", "d.star")
     adjust
 }
+#' @export
 launchApp <-
 function () 
 {
@@ -2381,7 +2379,7 @@ function ()
 load_preloaded_covB <-
 function (path) 
 {
-    preloaded_covB = read.csv(file = path)
+    preloaded_covB = utils::read.csv(file = path)
     ijk = preloaded_covB[, 1:3]
     covB = preloaded_covB[, 4:ncol(preloaded_covB)]
     list(covB = covB, ijk = ijk)
@@ -2397,6 +2395,7 @@ function (mni, sto_ijk)
         nrow = 3), 1))
     as.matrix(coordinate[1:3, ])
 }
+#' @export
 mripredict <-
 function (mri_data = NULL, clinical_data, response_var, covariates = NULL, 
     predictor = NULL, response_family, modulation, information_variables = NULL, 
@@ -2432,6 +2431,7 @@ function (mri_data = NULL, clinical_data, response_var, covariates = NULL,
     mri_fu = NULL
     mri_wm_un = NULL
     mri_wm_fu = NULL
+
     if (is.null(mri_data) & modulation != "clinical") {
         stop("No MRI data is selected, and the modulation is not set to 'clinical'. Please introduce MRI data or change modulation to 'clinical'.")
     }
@@ -2510,17 +2510,17 @@ function (mri_data = NULL, clinical_data, response_var, covariates = NULL,
     if (mri_data_format == "mripredict_data_list") {
         n_modalities = length(mri_data)
         mri_un = mri_data[[1]]
-        if (n_modalities > 1) 
+        if (n_modalities > 1 && modulation != "un") 
             mri_fu = mri_data[[2]]
-        if (n_modalities > 2) 
+        if (n_modalities > 2 && modulation == "all") 
             mri_wm_un = mri_data[[3]]
-        if (n_modalities > 3) 
+        if (n_modalities > 3 && modulation == "all") 
             mri_wm_fu = mri_data[[4]]
     }
     else if (mri_data_format == "mripredict_data") {
         mri_un = mri_data
     }
-    if (!is.null(clinical_data) && any(clinical_data != "")) {
+    if (!is.null(clinical_data)) {
         if (length(clinical_data) == 1) {
             data_table = .read_data_table(clinical_data)
         }
@@ -2531,14 +2531,18 @@ function (mri_data = NULL, clinical_data, response_var, covariates = NULL,
     else {
         data_table = NULL
     }
+
     if (!is.null(clinical_data)) 
         response = .check_response_var(data_table, response_var)
     else response = NULL
     response_levels = c()
-    if (response_family == "cox") {
+
+    if (response_family == "cox" || !inherits(response, "Surv")) {
         response_levels = unique(response[, 2])
         if (length(response_levels) != 2) {
         }
+    } else if (response_family =="cox" || inherits(response, "Surv")) {
+      response_levels = attr(response, "inputAttributes")$event$levels
     }
     else if ((response_family != "gaussian")) {
         response_levels = unique(response)
@@ -2613,12 +2617,16 @@ function (mri_data = NULL, clinical_data, response_var, covariates = NULL,
     if (!is.null(mri_paths)) {
         mp$mri_params = .load_mri(mri_paths = mri_paths[1])
         mp$mri_params$data <- NULL
+    } else if (!is.null(mp$mri_un)){
+      mp$mri_params = mp$mri_un
+      mp$mri_params$data <- NULL
     }
     class(mp) = "mripredict"
     .print_ok()
     attr(mp, "status") <- "OK"
     mp
 }
+#' @export
 mripredict_cv <-
 function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NULL, 
     preloaded_covB_fu_path = NULL, folds_file = NULL, n_cores = 1, 
@@ -2627,13 +2635,8 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     standardize_images = FALSE) 
 {
     EXPERIMENTAL_THRESHOLD = F
-    .require("glmnet")
-    .require("oro.nifti")
-    .require("survival")
-    .require("doParallel")
-    .require("logistf")
-    .require("doSNOW")
-    SIGNIFICANCE_THRESHOLD = qnorm(0.97499999999999998)
+
+    SIGNIFICANCE_THRESHOLD = stats::qnorm(0.97499999999999998)
     if (use_ensemble_voxels || use_ensemble_subjects) {
         N_ITERATIONS = 18
     }
@@ -2651,7 +2654,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
         save_name = paste0("output/", save_name, "/", save_name)
     }
     if (n_cores == "auto") {
-        n_cores = max(round(detectCores()/2), 1)
+        n_cores = max(round(parallel::detectCores()/2), 1)
     }
     mp$mask$data <- mp$mask_fu$data <- mp$mask_wm$data <- mp$mask_wmmmod$data <- NULL
     if (!is.null(mp$mask_path) && mp$mask_path != "") 
@@ -2701,7 +2704,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     Y = c()
     if (mp$response_family == "cox") {
         Y = mp$data_table[, match(mp$response_var, colnames(mp$data_table))]
-        Y = Surv(time = as.numeric(Y[, 1]), event = as.numeric(Y[, 
+        Y = survival::Surv(time = as.numeric(Y[, 1]), event = as.numeric(Y[, 
             2]))
     }
     else {
@@ -2777,6 +2780,8 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     else {
         preloaded_covB = NULL
     }
+    tipett_take_un = NULL
+    signif_indx = NULL
     cv_table = matrix(nrow = nrow(mp$data_table), ncol = 2)
     cv_table[, 1] = assigned_fold
     cv_accuracy = c()
@@ -2915,6 +2920,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
                         }
                       }
                     }
+
                     model_list = fit_model(mp = mp, data_informative_table = data_table_imputed_train, 
                       Y = trainY, mri = mri$data[, , , training], 
                       mri_fu = mri_fu$data[, , , training], mri_wm = mri_wm$data[, 
@@ -3016,7 +3022,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
                     preds = rowMeans(test_preds)
                     linPreds = cbind(linPreds, preds)
                     if (ide_shiny) 
-                      incProgress(1/(n_folds * N_ITERATIONS * 
+                      shiny::incProgress(1/(n_folds * N_ITERATIONS * 
                         n_multiple_imputations), detail = paste("Doing crossvalidation. Fold", 
                         fold, ". Iteration:", iter, ". Imputation:", 
                         iter_imputation))
@@ -3081,7 +3087,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
                 else {
                   cat("Skipping fold: ", fold, " Iteration: ", 
                     iter, "\n")
-                  res_csv = read.csv(sprintf("%s_iteration%d_%s_results_fold%d.csv", 
+                  res_csv = utils::read.csv(sprintf("%s_iteration%d_%s_results_fold%d.csv", 
                     save_name, iter, mp$response_family, fold))
                   cv_table_predictions = rbind(cv_table_predictions, 
                     res_csv)
@@ -3159,7 +3165,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
         }
     }
     if (!is.null(train_thresholds_all)) 
-        write.csv(train_thresholds_all, sprintf("%s_train_thresholds.csv", 
+        utils::write.csv(train_thresholds_all, sprintf("%s_train_thresholds.csv", 
             save_name), row.names = FALSE)
     if (mp$response_family == "cox") {
         mean_pred_subjs = data.frame(id = sort(unique(cv_table_predictions$id)), 
@@ -3195,7 +3201,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     mp$subjects_used = subjects_used
     cat("\n[End] - FOLDS performance:", round(cv_accuracy, digits = 2), 
         "\n")
-    flush.console()
+    utils::flush.console()
     switch(mp$response_family, binomial = {
         bin_threshold = sum(cv_table_predictions$response == 
             1)/length(cv_table_predictions$response)
@@ -3212,9 +3218,9 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
             2])
         mp$metrics = .metrics_cox(cv_table_predictions, mp$frontier_time, 
             save = FALSE)
-        write.csv(mp$metrics, sprintf("%s_custom_metric.txt", 
+        utils::write.csv(mp$metrics, sprintf("%s_custom_metric.txt", 
             save_name))
-        write.csv(.coxph_RD2(predictor = mp$cv_results$lin_pred, 
+        utils::write.csv(.coxph_RD2(predictor = mp$cv_results$lin_pred, 
             stime = mp$cv_results$time, sevent = mp$cv_results$status), 
             sprintf("%s_rd2.txt", save_name))
         print(mp$metrics)
@@ -3222,7 +3228,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     else if (mp$response_family == "gaussian") {
         colnames(mp$cv_results) = c("id", "pred", "real", "fold", 
             "iteration")
-        mp$cv_results = aggregate(mp$cv_results[, 2:4], list(mp$cv_results$id), 
+        mp$cv_results = stats::aggregate(mp$cv_results[, 2:4], list(mp$cv_results$id), 
             mean)
         colnames(mp$cv_results) = c("id", "prediction", "real", 
             "fold")
@@ -3232,9 +3238,9 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
             save_name))
     }
     else {
-        write.csv(mp$cv_results, sprintf("%s_bin_raw.csv", save_name), 
+        utils::write.csv(mp$cv_results, sprintf("%s_bin_raw.csv", save_name), 
             row.names = F)
-        mp$cv_results = aggregate(mp$cv_results[, 2:5], list(mp$cv_results$id), 
+        mp$cv_results = stats::aggregate(mp$cv_results[, 2:5], list(mp$cv_results$id), 
             mean)
         colnames(mp$cv_results) = c("id", "linear_predictor", 
             "probability", "real", "fold")
@@ -3251,13 +3257,15 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
         save_name))
     mp$cv_results = mp$cv_results[order(mp$cv_results$id), ]
     saveRDS(mp, file = sprintf("%s_mp.rds", save_name))
+
     .most_frequent_variables(mp$models, mp = mp, file = sprintf("%s_frequent_variables.csv", 
         save_name))
-    write.csv(mp$cv_results, sprintf("%s_subject_linear_predictors.csv", 
+    utils::write.csv(mp$cv_results, sprintf("%s_subject_linear_predictors.csv", 
         save_name))
     cat("\n[DONE] - CV finished:")
     mp
 }
+#' @export
 mripredict_fit <-
 function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NULL, 
     preloaded_covB_fu_path = NULL, folds_file = "", n_cores = 1, 
@@ -3265,15 +3273,11 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     use_ensemble_voxels = FALSE, use_ensemble_subjects = FALSE, 
     ide_shiny = FALSE, standardize_images = FALSE) 
 {
-    .require("glmnet")
-    .require("oro.nifti")
-    .require("survival")
-    .require("doParallel")
-    .require("logistf")
+
     data_informative_table = NULL
     imp.data_informative_table_train = NULL
     imp.data_informative_table_test = NULL
-    SIGNIFICANCE_THRESHOLD = qnorm(0.97499999999999998)
+    SIGNIFICANCE_THRESHOLD = stats::qnorm(0.97499999999999998)
     if (use_ensemble_learning) {
         N_ITERATIONS = 18
     }
@@ -3283,7 +3287,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     n_multiple_imputations = 1
     N_M_IMPUTATIONS = 20
     if (n_cores == "auto") {
-        n_cores = max(round(detectCores()/2), 1)
+        n_cores = max(round(parallel::detectCores()/2), 1)
     }
     mp$mask$data <- mp$mask_fu$data <- mp$mask_wm$data <- mp$mask_wmmmod$data <- NULL
     if (!is.null(mp$mask_path)) 
@@ -3300,6 +3304,9 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     if (!is.null(mp$mri_paths)) {
         mri = .load_mri(mp$mri_paths, mask = mp$mask$data, space = space)
     }
+    if (!is.null(mp$mri_un)) {
+      mri = mp$mri_un
+    }
     mri_fu = NULL
     if (!mp$modulation == "un" && !is.null(mp$mri_fu_paths)) {
         mri_fu = .load_mri(mp$mri_fu_paths, mp$mask_fu$data, 
@@ -3307,13 +3314,17 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     }
     mri_wm = NULL
     mri_wm_fu = NULL
-    if (!is.null(mp$mri_wmmod_paths)) {
-        mri_fu = .load_mri(mp$mri_fu_paths, mp$mask_fu$data, 
-            space = space)
-        mri_wm = .load_mri(mp$mri_wm_paths, mp$mask_wm$data, 
-            space = space)
-        mri_wm_fu = .load_mri(mp$mri_wmmod_paths, mp$mask_wmmod$data, 
-            space = space)
+    if (!is.null(mp$mri_wm_paths)) {
+      mri_wm = .load_mri(mp$mri_wm_paths, mp$mask_wm$data, space = space)
+    }
+    if (!is.null(mp$mri_wmmod_paths)){
+      mri_wm_fu = .load_mri(mp$mri_wmmod_paths, mp$mask_wmmod$data, space = space)
+    }
+    if (!is.null(mp$mri_wm)){
+      mri_wm = mp$mri_wm
+    }
+    if (!is.null(mp$mri_wm_fu)){
+      mri_wm_fu = mp$mri_wm_fu
     }
     cat("Time loading data:", difftime(Sys.time(), a, units = "mins"), 
         "mins.\n")
@@ -3322,7 +3333,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     Y = c()
     if (mp$response_family == "cox") {
         Y = mp$data_table[, match(mp$response_var, colnames(mp$data_table))]
-        Y = Surv(time = as.numeric(Y[, 1]), event = as.numeric(Y[, 
+        Y = survival::Surv(time = as.numeric(Y[, 1]), event = as.numeric(Y[, 
             2]))
     }
     else {
@@ -3406,6 +3417,7 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
             internal_folds = c()
             internal_folds = assign.folds(y = trainY, family = mp$response_family, 
                 nfolds = 10, site = sites)
+
             model_list = fit_model(mp = mp, data_informative_table = data_table_imputed_train, 
                 Y = trainY, mri = mri$data, mri_fu = mri_fu$data, 
                 mri_wm = mri_wm$data, mri_fu_wm = mri_wm_fu$data, 
@@ -3423,9 +3435,9 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
             model_counter <- model_counter + 1
             .print_ok()
             if (ide_shiny) 
-                incProgress(1/(n_folds * N_ITERATIONS * n_multiple_imputations), 
-                  detail = paste("Doing crossvalidation. Fold", 
-                    fold, ". Iteration:", iter, ". Imputation:", 
+                shiny::incProgress(1/(N_ITERATIONS * n_multiple_imputations), 
+                  detail = paste("Doing crossvalidation.", 
+                    "Iteration:", iter, ". Imputation:", 
                     iter_imputation))
         }
         .print_ok()
@@ -3439,17 +3451,13 @@ function (mp, space = "MNI", save_name = "results_cv", preloaded_covB_path = NUL
     saveRDS(mp, file = sprintf("%s_mp.rds", save_name))
     mp
 }
+#' @export
 mripredict_predict <-
-function (mp, mri_data = NULL, mri_fu_paths_file = NULL, clinical_data = NULL, 
+function (mp, mri_data = NULL, clinical_data = NULL, 
     space, n_cores = 1) 
 {
-    .require("glmnet")
-    .require("oro.nifti")
-    .require("survival")
-    .require("doParallel")
-    .require("parallel")
-    .require("logistf")
-    SIGNIFICANCE_THRESHOLD = qnorm(0.97499999999999998)
+
+    SIGNIFICANCE_THRESHOLD = stats::qnorm(0.97499999999999998)
     N_ITERATIONS = mp$n_iterations
     N_M_IMPUTATIONS = mp$n_imputations
     if (n_cores == "auto") {
@@ -3463,24 +3471,33 @@ function (mp, mri_data = NULL, mri_fu_paths_file = NULL, clinical_data = NULL,
     .print_action("Loading MRI data")
     a = Sys.time()
     mri = NULL
-    if (!is.null(mp_test$mri_paths)) {
-        mri = .load_mri(mp_test$mri_paths, mask = mp$mask$data, 
-            space = space)
+    if (!is.null(mp_test$mri_paths)){
+      mri = .load_mri(mp_test$mri_paths, mask=mp$mask$data, space = space)
     }
+    if (!is.null(mp_test$mri_un)){
+      mri = mp_test$mri_un
+    }
+    # load fully modulated data
     mri_fu = NULL
-    if (!mp_test$modulation == "un" && !is.null(mp_test$mri_fu_paths)) {
-        mri_fu = .load_mri(mp_test$mri_fu_paths, mp$mask_fu$data, 
-            space = space)
+    if (!mp_test$modulation == 'un' && !is.null(mp_test$mri_fu_paths)) {
+      mri_fu = .load_mri(mp_test$mri_fu_paths, mp$mask_fu$data, space = space)
+    }
+    if (!is.null(mp_test$mri_fu)){
+      mri_fu = mp_test$mri_fu
     }
     mri_wm = NULL
     mri_wm_fu = NULL
+    if (!is.null(mp_test$mri_wm_paths)) {
+      mri_wm = .load_mri(mp_test$mri_wm_paths, mp$mask_wm$data, space = space)
+    }
     if (!is.null(mp_test$mri_wmmod_paths)) {
-        mri_fu = .load_mri(mp_test$mri_fu_paths, mp$mask_fu$data, 
-            space = space)
-        mri_wm = .load_mri(mp_test$mri_wm_paths, mp$mask_wm$data, 
-            space = space)
-        mri_wm_fu = .load_mri(mp_test$mri_wmmod_paths, mp$mask_wmmod$data, 
-            space = space)
+      mri_wm_fu = .load_mri(mp_test$mri_wmmod_paths, mp$mask_wmmod$data, space = space)
+    }
+    if (!is.null(mp_test$mri_wm)) {
+      mri_wm = mp_test$mri_wm
+    }
+    if (!is.null(mp_test$mri_wm_fu)) {
+      mri_wm_fu = mp_test$mri_wm_fu
     }
     cat("Time loading data:", difftime(Sys.time(), a, units = "mins"), 
         "mins.\n")
@@ -3574,88 +3591,6 @@ function (mp, mri_data = NULL, mri_fu_paths_file = NULL, clinical_data = NULL,
     }
     pred
 }
-optimal_modulation <-
-function (mask_X, mask_fu_X, mask_ijk, covX_training, trainY, 
-    response_family) 
-{
-    nx = ceiling(sqrt(ncol(mask_X)))
-    tmp_mask = mask_X[1, ]
-    length(tmp_mask) <- prod(dim(matrix(mask_X[1, ], ncol = nx)))
-    m_tmp_mask = matrix(!is.na(tmp_mask), ncol = nx, byrow = FALSE)
-    nim = nifti(array(m_tmp_mask, dim = c(1, nx, nx)), datatype = 16)
-    nim@scl_slope = 1
-    writeNIfTI(nim, "temp_mask", onefile = TRUE, gzipped = TRUE, 
-        verbose = FALSE, warn = -1, compression = 6)
-    path_un = c()
-    path_fu = c()
-    for (subj_i in 1:nrow(covX_training)) {
-        subj_x = mask_X[subj_i, ]
-        length(subj_x) <- prod(dim(matrix(subj_x, ncol = nx)))
-        m_subj_x = matrix(subj_x, ncol = nx, byrow = FALSE)
-        m_subj_x[is.na(m_subj_x)] = 0
-        nim = nifti(array(m_subj_x, dim = c(1, nx, nx)), datatype = 16)
-        nim@scl_slope = 1
-        path_un_tmp = paste(getwd(), "/R_tmp/un_", subj_i, sep = "")
-        path_un = c(path_un, paste(path_un_tmp, ".nii.gz", sep = ""))
-        writeNIfTI(nim, path_un_tmp, onefile = TRUE, gzipped = TRUE, 
-            verbose = FALSE, warn = -1, compression = 6)
-        subj_x = mask_fu_X[subj_i, ]
-        length(subj_x) <- prod(dim(matrix(subj_x, ncol = nx)))
-        m_subj_x = matrix(subj_x, ncol = nx, byrow = FALSE)
-        m_subj_x[is.na(m_subj_x)] = 0
-        nim = nifti(array(m_subj_x, dim = c(1, nx, nx)), datatype = 16)
-        nim@scl_slope = 1
-        path_fu_tmp = paste(getwd(), "/R_tmp/fu_", subj_i, sep = "")
-        path_fu = c(path_fu, paste(path_fu_tmp, ".nii.gz", sep = ""))
-        writeNIfTI(nim, path_fu_tmp, onefile = TRUE, gzipped = TRUE, 
-            verbose = FALSE, warn = -1, compression = 6)
-    }
-    write(path_un, file = "temp_un.txt")
-    write(path_fu, file = "temp_fu.txt")
-    if (ncol(as.matrix(covX_training)) == 1) 
-        design_mat = cbind(1, trainY)
-    else design_mat = cbind(1, trainY, covX_training[, 2:ncol(covX_training)])
-    write.table(design_mat, "design_mat.txt", col.names = FALSE, 
-        row.names = FALSE)
-    system("../matlab/optimal_modulation_linux64 -d design_mat.txt -i temp_un.txt temp_fu.txt -o temp -m temp_mask.nii.gz")
-    img_kappa = readNIfTI("temp_kappa.nii.gz")
-    img_kappa = as.vector(img_kappa@.Data[1, , ])
-    list_mri_op_training = lapply(seq_len(ncol(mask_ijk)), function(i) {
-        (1 - img_kappa[i]) * mri$data[as.numeric(mask_ijk[1, 
-            i]), as.numeric(mask_ijk[2, i]), as.numeric(mask_ijk[3, 
-            i]), training] + img_kappa[i] * mri_fu$data[as.numeric(mask_ijk[1, 
-            i]), as.numeric(mask_ijk[2, i]), as.numeric(mask_ijk[3, 
-            i]), test]
-    })
-    list_mask_all = pbmclapply(list_mri_op_training, function(voxel_training, 
-        trainY, covX_training) {
-        covm = lm.fit(covX_training, voxel_training)
-        covB = coefficients(covm)
-        X = residuals(covm)
-        if (response_family == "binomial") {
-            sig = summary(glm(trainY ~ X, family = binomial()))$coefficients[2, 
-                3]
-        }
-        else if (response_family == "cox") {
-            surv = Surv(trainY[, 1], trainY[, 2])
-            sig = summary(coxph(surv ~ X))$coefficients[4]
-        }
-        else {
-            sig = summary(lm(trainY ~ X))$coefficients[2, 3]
-        }
-        c(covB, X, sig)
-    }, trainY, covX_training, mc.cores = n_cores)
-    list_mri_op_training = ""
-    mask_op_all = matrix(unlist(list_mask_all), ncol = n_voxels)
-    mask_op_covB = mask_op_all[1:ncol(covX_training), ]
-    mask_op_X = mask_op_all[-c(1:ncol(covX_training), nrow(mask_all)), 
-        ]
-    t_or_z_op_vals = mask_op_all[nrow(mask_op_all), ]
-    mask_op_signif_indx = which(abs(t_or_z_op_vals[1:n_voxels]) > 
-        SIGNIFICANCE_THRESHOLD)
-    list(mask_op_covB = mask_op_covB, mask_op_X = mask_op_X, 
-        t_or_z_op_vals = t_or_z_op_vals, mask_op_signif_indx = mask_op_signif_indx)
-}
 postmean <-
 function (g.hat, g.bar, n, d.star, t2) 
 {
@@ -3668,16 +3603,16 @@ function (sum2, n, a, b)
 }
 remove_effects <-
 function (mask_3d, mri, covX_training, trainY = NULL, n_cores = 1, 
-    response_family, SIGNIFICANCE_THRESHOLD = qnorm(0.97499999999999998), 
+    response_family, SIGNIFICANCE_THRESHOLD = stats::qnorm(0.97499999999999998), 
     SIGNIFICANT = TRUE, covX_site = c(), modality = "", REMOVE_EFFECT_TO_X = TRUE) 
 {
     if (response_family == "gaussian") {
-        SIGNIFICANCE_THRESHOLD = qt(0.97499999999999998, nrow(covX_training) - 
+        SIGNIFICANCE_THRESHOLD = stats::qt(0.97499999999999998, nrow(covX_training) - 
             ncol(covX_training))
     }
     if (length(dim(mri)) == 4) {
         mask_constant = mri[, , , 1] > -1
-        mask_constant = mask_constant & (apply(mri, 1:3, var) > 
+        mask_constant = mask_constant & (apply(mri, 1:3, stats::var) > 
             0)
         mask_3d = mask_3d & mask_constant
         mask_ijk = cbind(which(mask_3d, arr.ind = TRUE), 1)
@@ -3688,7 +3623,7 @@ function (mask_3d, mri, covX_training, trainY = NULL, n_cores = 1,
         })
     }
     else if (length(dim(mri) == 2)) {
-        mask_constant = mri[, 1] > -1 & (apply(mri, 2, var) > 
+        mask_constant = mri[, 1] > -1 & (apply(mri, 2, stats::var) > 
             0)
         mask_3d = mask_3d & mask_constant
         list_mri_training = lapply(seq_len(ncol(mask_3d)), function(i) {
@@ -3709,25 +3644,25 @@ function (mask_3d, mri, covX_training, trainY = NULL, n_cores = 1,
                 X = voxel_training
             }
             else {
-                covm = lm.fit(covX_training, voxel_training)
-                covB = coefficients(covm)
-                X = residuals(covm)
+                covm = stats::lm.fit(covX_training, voxel_training)
+                covB = stats::coefficients(covm)
+                X = stats::residuals(covm)
             }
             if (SIGNIFICANT) {
                 if (length(unique(X)) > 1) {
                   if (response_family == "cox") {
-                    sig = summary(coxph(trainY ~ X))$coefficients[1, 
+                    sig = summary(survival::coxph(trainY ~ X))$coefficients[1, 
                       4]
                     if (is.na(as.numeric(sig))) {
                       sig = 0
                     }
                   }
                   else if (response_family == "binomial") {
-                    sig = summary(glm(trainY ~ X, family = binomial))$coefficients[2, 
+                    sig = summary(stats::glm(trainY ~ X, family = stats::binomial))$coefficients[2, 
                       3]
                   }
                   else {
-                    sig = summary(lm(trainY ~ X))$coefficients[2, 
+                    sig = summary(stats::lm(trainY ~ X))$coefficients[2, 
                       3]
                   }
                 }
@@ -3739,9 +3674,9 @@ function (mask_3d, mri, covX_training, trainY = NULL, n_cores = 1,
                 sig = NA
             }
             c(covB, X, sig)
-        }, switch(response_family, cox = Surv(trainY[, 1], trainY[, 
+        }, switch(response_family, cox = survival::Surv(trainY[, 1], trainY[, 
             2]), trainY), covX_training, SIGNIFICANT)
-        trainY = switch(response_family, cox = Surv(trainY[, 
+        trainY = switch(response_family, cox = survival::Surv(trainY[, 
             1], trainY[, 2]), trainY)
     }
     list_mri_training = NULL
@@ -3772,15 +3707,16 @@ function (mask_3d, mri, covX_training, trainY = NULL, n_cores = 1,
         mask_3d = mask_3d, combat = combat)
 }
 remove_effects_precalculated <-
-function (mask_3d, preloaded_covB, mri, covX_training = "", trainY = "", 
-    response_family = "", SIGNIFICANCE_THRESHOLD = qnorm(0.97499999999999998), 
+function (mask_3d, preloaded_covB, mri, covX_training = NULL, trainY = NULL, 
+    response_family = "", SIGNIFICANCE_THRESHOLD = stats::qnorm(0.97499999999999998), 
     SIGNIFICANCE = FALSE, n_cores = 1, covX_site = c()) 
 {
+    i=NULL
     if (response_family == "gaussian") {
-        SIGNIFICANCE_THRESHOLD = qt(0.97499999999999998, nrow(covX_training) - 
+        SIGNIFICANCE_THRESHOLD = stats::qt(0.97499999999999998, nrow(covX_training) - 
             ncol(covX_training))
     }
-    trainY = switch(response_family, cox = Surv(trainY[, 1], 
+    trainY = switch(response_family, cox = survival::Surv(trainY[, 1], 
         trainY[, 2]), trainY)
     a = Sys.time()
     cat("Removing effects...\n")
@@ -3805,30 +3741,32 @@ function (mask_3d, preloaded_covB, mri, covX_training = "", trainY = "",
     }
     n_voxels = dim(mri_matrix)[2]
     message("Running on ", n_cores, " thread(s).")
+    
     if (n_cores > 1) {
         time1 = Sys.time()
         if (SIGNIFICANCE) {
-            pb <- txtProgressBar(max = n_voxels, style = 3)
-            progress <- function(n) setTxtProgressBar(pb, n)
+            pb <- utils::txtProgressBar(max = n_voxels, style = 3)
+            progress <- function(n) utils::setTxtProgressBar(pb, n)
             opts <- list(progress = progress)
-            cl <- makeCluster(n_cores, setup_strategy = "sequential", 
+            cl <- snow::makeCluster(n_cores, setup_strategy = "sequential", 
                 timeout = 0.5)
-            registerDoParallel(cl)
-            sig <- foreach(i = 1:n_voxels, .combine = "c", .options.snow = opts) %dopar% 
+            doParallel::registerDoParallel(cl)
+            '%dopar%' <- foreach::"%dopar%"
+            sig <- foreach::foreach(i = 1:n_voxels, .combine = "c", .options.snow = opts) %dopar%
                 {
                   if (length(unique(X[, i])) > 1) {
                     if (response_family == "cox") {
-                      sig = summary(coxph(trainY ~ X[, i]))$coefficients[1, 
+                      sig = summary(survival::coxph(trainY ~ X[, i]))$coefficients[1, 
                         4]
                       if (is.na(as.numeric(sig))) 
                         sig = 0
                     }
                     else if (response_family == "binomial") {
-                      sig = summary(glm(trainY ~ X[, i], family = binomial))$coefficients[2, 
+                      sig = summary(stats::glm(trainY ~ X[, i], family = stats::binomial))$coefficients[2, 
                         3]
                     }
                     else {
-                      sig = summary(lm(trainY ~ X[, i]))$coefficients[2, 
+                      sig = summary(stats::lm(trainY ~ X[, i]))$coefficients[2, 
                         3]
                     }
                   }
@@ -3838,7 +3776,7 @@ function (mask_3d, preloaded_covB, mri, covX_training = "", trainY = "",
                   sig
                 }
             close(pb)
-            stopCluster(cl)
+            snow::stopCluster(cl)
             cat("Time removing effects (run with ", n_cores, 
                 " cores):", difftime(Sys.time(), a, units = "mins"), 
                 "mins.\n")
@@ -3850,23 +3788,23 @@ function (mask_3d, preloaded_covB, mri, covX_training = "", trainY = "",
     else {
         sig = rep(NA, n_voxels)
         if (SIGNIFICANCE) {
-            .require("pbapply")
-            pbo = pboptions(type = "timer")
+          
+            pbo = pbapply::pboptions(type = "timer")
             time1 = Sys.time()
             sig = pbapply::pbsapply(1:n_voxels, function(i) {
                 if (length(unique(X[, i])) > 1) {
                   if (response_family == "cox") {
-                    sig = summary(coxph(trainY ~ X[, i]))$coefficients[1, 
+                    sig = summary(survival::coxph(trainY ~ X[, i]))$coefficients[1, 
                       4]
                     if (is.na(as.numeric(sig))) 
                       sig = 0
                   }
                   else if (response_family == "binomial") {
-                    sig = summary(glm(trainY ~ X[, i], family = binomial))$coefficients[2, 
+                    sig = summary(stats::glm(trainY ~ X[, i], family = stats::binomial))$coefficients[2, 
                       3]
                   }
                   else {
-                    sig = summary(lm(trainY ~ X[, i]))$coefficients[2, 
+                    sig = summary(stats::lm(trainY ~ X[, i]))$coefficients[2, 
                       3]
                   }
                 }
@@ -3903,24 +3841,24 @@ function (list_coordinates, iter = 1, return_3d = FALSE, img_3d = c())
     C = apply(U, 1, function(u) {
         sum(u * v1)
     })
-    if (runif(1) > 0.5) {
-        M = C > median(C)
+    if (stats::runif(1) > 0.5) {
+        M = C > stats::median(C)
     }
     else {
-        M = C >= median(C)
+        M = C >= stats::median(C)
     }
     if (return_3d) {
         mask_ijk = U
         total = nrow(mask_ijk)
         img_3d = img_3d * 0
-        pb <- txtProgressBar(min = 0, max = total, style = 3)
+        pb <- utils::txtProgressBar(min = 0, max = total, style = 3)
         for (i in seq_len(nrow(mask_ijk))) {
             if (M[i]) 
                 img_3d[mask_ijk[i, 1], mask_ijk[i, 2], mask_ijk[i, 
                   3]] = TRUE
             else img_3d[mask_ijk[i, 1], mask_ijk[i, 2], mask_ijk[i, 
                 3]] = FALSE
-            setTxtProgressBar(pb, i)
+            utils::setTxtProgressBar(pb, i)
         }
         close(pb)
         img_3d
@@ -3958,7 +3896,7 @@ function (x, covariates)
 tipett_modulation <-
 function (mask_X, t_or_z_vals, mask_fu_X, t_or_z_fu_vals, mask_ijk, 
     covX_training, trainY, response_family, SIGNIFICANCE = FALSE, 
-    SIGNIFICANCE_THRESHOLD = qnorm(0.97499999999999998)) 
+    SIGNIFICANCE_THRESHOLD = stats::qnorm(0.97499999999999998)) 
 {
     indx_max_abs_un = abs(t_or_z_vals) > abs(t_or_z_fu_vals)
     t_or_z_op_vals = t_or_z_fu_vals
@@ -3974,3 +3912,14 @@ function (x, y, z)
     matrix(c(1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1), 
         4)
 }
+s_check <- 
+  function()
+  {
+    doParallel::registerDoParallel()
+    doSNOW::registerDoSNOW()
+    glmnet::assess.glmnet()
+    logistf::backward()
+    oro.nifti::anlz()
+    pbapply::closepb()
+    survival::aareg()
+  }
